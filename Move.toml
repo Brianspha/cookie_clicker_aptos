@@ -1,0 +1,18 @@
+[package]
+name = "cookie_clicker"
+version = "0.1.0"
+
+[addresses]
+cookie_nft_address = "0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5"
+cookie_clicker_address = "0x1"
+aptos_framework = "0x1"
+fungible_token_address = "0x2"
+[dependencies.AptosFramework]
+git = "https://github.com/aptos-labs/aptos-core.git"
+rev = "mainnet"
+subdir = "aptos-move/framework/aptos-framework"
+
+[dependencies.AptosToken]
+git = "https://github.com/aptos-labs/aptos-core.git"
+rev = "mainnet"
+subdir = "aptos-move/framework/aptos-token"
