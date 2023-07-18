@@ -40,8 +40,12 @@ This contract is used to initialize the game and contains all functionality requ
 
 I also went as far as to start developing a front end for the game; it's still WIP but should be done soon. It's a bit challenging to build the front end since I'm using Vue and there are no resources I found that use Vue, mostly React (roles and eyes).
 
+## UI screenhosts
+
+![alt text](./screenshots/1.png)
+![alt text](./screenshots/2.png)
 ### Improvements
 
-- Ability for users to pay to play
-- Ability for users to claim the token needed to play the game
+- Ability for users to pay to play (WIP)
+- Ability for users to claim the tokens needed to play the game once off (WIP)
 - Ability for users to exchange their NFTs for play tokens
