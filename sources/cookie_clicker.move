@@ -495,8 +495,8 @@ module cookie_clicker_address::cookie_clicker {
 
 
 
-    #[test(player = @0xcafe,resource_account = @0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5,aptos_framework = @aptos_framework)]
-    public entry fun player_create_cookie(player: signer,aptos_framework:signer,resource_account:signer)  {
+    #[test(player = @0xcafe,player_again= @0xcafe,resource_account = @0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5,aptos_framework = @aptos_framework)]
+    public entry fun player_create_cookie(player: signer,player_again: signer,aptos_framework:signer,resource_account:signer) acquires Cookie,TokensClaimed,ModuleData  {
         timestamp::set_time_has_started_for_testing(&aptos_framework);
         timestamp::update_global_time_for_test_secs(10);
         create_account_for_test(signer::address_of(&player));
@@ -504,15 +504,15 @@ module cookie_clicker_address::cookie_clicker {
         let player_address = signer::address_of(&player);
         init_module(&resource_account);
         claim_tokens(player);
-        create_cookie(player, 0, false);
+        create_cookie(player_again, 0, false);
 
         assert!(get_cookie(player_address) == 0, ENO_COOKIE_FOUND);
         assert!(coin::balance<AptosCoin>(player_address) == 100000-PLAY_COST, EBALANCE_NOT_DEDUCTED);
  
     }
 
-    #[test(player = @0x1, player_again = @0x1,resource_account = @0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5,aptos_framework = @aptos_framework)]
-    public entry fun player_create_cookie_and_update(player: signer, player_again: signer,aptos_framework:signer,resource_account:signer) acquires Cookie,ModuleData {
+     #[test(player = @0x1, player_again = @0x1,resource_account = @0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5,aptos_framework = @aptos_framework)]
+    public entry fun player_create_cookie_and_update(player: signer, player_again: signer,aptos_framework:signer,resource_account:signer) acquires Cookie,TokensClaimed,ModuleData {
         timestamp::set_time_has_started_for_testing(&aptos_framework);
         timestamp::update_global_time_for_test_secs(10);
         create_account_for_test(signer::address_of(&player));
@@ -527,7 +527,7 @@ module cookie_clicker_address::cookie_clicker {
     }
 
     #[test(player = @0x1, player_again = @0x1, player_again1 = @0x1,resource_account = @0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5,aptos_framework = @aptos_framework)]
-    public entry fun player_create_cookie_and_upgrade(player: signer, player_again: signer, player_again1: signer,aptos_framework:signer,resource_account:signer) acquires Cookie,ModuleData {
+    public entry fun player_create_cookie_and_upgrade(player: signer, player_again: signer, player_again1: signer,aptos_framework:signer,resource_account:signer) acquires Cookie,TokensClaimed,ModuleData {
         timestamp::set_time_has_started_for_testing(&aptos_framework);
         timestamp::update_global_time_for_test_secs(10);
         create_account_for_test(signer::address_of(&player));
@@ -546,7 +546,7 @@ module cookie_clicker_address::cookie_clicker {
     }
 
     #[test(player = @0x1, player_again = @0x1, player_again1 = @0x1,resource_account = @0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5,aptos_framework = @aptos_framework)]
-    public entry fun player_create_cookie_new_game(player: signer, player_again: signer, player_again1: signer,aptos_framework:signer,resource_account:signer) acquires Cookie,ModuleData {
+    public entry fun player_create_cookie_new_game(player: signer, player_again: signer, player_again1: signer,aptos_framework:signer,resource_account:signer) acquires Cookie,TokensClaimed,ModuleData {
         timestamp::set_time_has_started_for_testing(&aptos_framework);
         timestamp::update_global_time_for_test_secs(10);
         create_account_for_test(signer::address_of(&player));
@@ -562,7 +562,7 @@ module cookie_clicker_address::cookie_clicker {
     }
 
     #[test(player = @0xcafe, player_again = @0xcafe,player_again_1 = @0xcafe,resource_account = @0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5,aptos_framework = @aptos_framework)]
-    public entry fun player_create_cookie_new_game_and_swop_cookie_for_nft(player: signer, player_again: signer,player_again_1: signer,resource_account:signer,aptos_framework:signer) acquires Cookie,ModuleData {
+    public entry fun player_create_cookie_new_game_and_swop_cookie_for_nft(player: signer, player_again: signer,player_again_1: signer,resource_account:signer,aptos_framework:signer) acquires Cookie,TokensClaimed,ModuleData {
         timestamp::set_time_has_started_for_testing(&aptos_framework);
         timestamp::update_global_time_for_test_secs(10);
         create_account_for_test(signer::address_of(&player));
@@ -605,4 +605,6 @@ module cookie_clicker_address::cookie_clicker {
         init_module(&resource_account);
         assert!(get_player_click_multiplier(player_address) == 4, ENO_INVALID_CLICK_MULTIPLIER);
     }
+
+   
 }
