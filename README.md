@@ -2,6 +2,16 @@
 
 This repo contains artifacts for my interpretation of what the web3 version of the cookie clicker game could be. Not all functions could be implemented. but the basics are there. I would need to plan for some time to get a super awesome game, and this version was a way for me to get started with learning the nuts and bolts of the Aptos ecosystem.
 
+### Note
+
+Unit tests are still failing for some reason due to the below error:
+
+`assert!(
+│ 446 │ │             coin_address<CoinType>() == account_addr,
+│ 447 │ │             error::invalid_argument(ECOIN_INFO_ADDRESS_MISMATCH),
+│ 448 │ │         );`
+Ive searched the interwebs with no luck even previous examples in the aptos repo arent working due to this error :(
+
 ### Installation
 
 There is a make file that one could use to run most of the required commands, like unit testing, compiling, etc.
@@ -44,6 +54,7 @@ I also went as far as to start developing a front end for the game; it's still W
 
 ![alt text](./screenshots/1.png)
 ![alt text](./screenshots/2.png)
+
 ### Improvements
 
 - Ability for users to pay to play (WIP)
