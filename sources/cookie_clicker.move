@@ -195,19 +195,19 @@ module cookie_clicker_address::cookie_clicker {
     ///
     /// Returns: The `TokensClaimed` struct representing the player's claimed tokens data.
     ///
-    public fun claim_tokens(player: signer) acquires TokensClaimed, ModuleData {
-        let player_address: address = signer::address_of(&player);
+    public fun claim_tokens(player: &signer) acquires TokensClaimed, ModuleData {
+        let player_address: address = signer::address_of(player);
 
         // Check if the player has already claimed tokens
         assert!(!exists<TokensClaimed>(player_address), error::not_found(EALREADY_CLAIMED_TOKENS));
-
+        let temp_signer=player;
         move_to(
-        &player,
+        temp_signer,
         TokensClaimed {
             player: player_address,
             claimed: true,
             amount: CLAIMABLE_TOKENS,
-            claim_tokens_event: account::new_event_handle<ClaimedFreeTokens>(&player),
+            claim_tokens_event: account::new_event_handle<ClaimedFreeTokens>(player),
         },
         );
 
@@ -215,7 +215,7 @@ module cookie_clicker_address::cookie_clicker {
         let module_data = borrow_global_mut<ModuleData>(@mint_nft);
 
         // Register the player so they can have the store account for the token
-        coin::register<AptosCoin>(&player);
+        coin::register<AptosCoin>(temp_signer);
         // Mint CLAIMABLE_TOKENS to the resource account
         coin::deposit<CookieClickerPlayToken>(player_address, coin::mint<CookieClickerPlayToken>(CLAIMABLE_TOKENS, &module_data.mint_cap));
 
@@ -237,18 +237,19 @@ module cookie_clicker_address::cookie_clicker {
     ///   of an existing game (false).
     ///
     /// Returns: The `Cookie` struct representing the player's cookie data.
-    public entry fun create_cookie(player: signer, cookies: u256, new_game: bool) acquires Cookie,ModuleData {
-        let player_address: address = signer::address_of(&player);
+    public entry fun create_cookie(player: &signer, cookies: u256, new_game: bool) acquires Cookie,ModuleData {
+        let player_address: address = signer::address_of(player);
         assert!(coin::balance<ModuleData>(player_address)== PLAY_COST,error::not_found(ENOT_ENOUGH_COINS_TO_PLAY));
 
+        let temp_signer=player;
         let module_data = borrow_global_mut<ModuleData>(@mint_nft);
         let resource_signer = account::create_signer_with_capability(&module_data.signer_cap);
         let resource_signer_address: address = signer::address_of(&resource_signer);
-        coin::transfer<ModuleData>(&player,resource_signer_address,PLAY_COST);
+        coin::transfer<ModuleData>(temp_signer,resource_signer_address,PLAY_COST);
 
         if (!exists<Cookie>(player_address)) {
             move_to(
-                &player,
+                temp_signer,
                 Cookie {
                     cookies: cookies,
                     player: player_address,
@@ -257,9 +258,9 @@ module cookie_clicker_address::cookie_clicker {
                     click_multiplier: 1,
                     initial_threshold: 5000,
                     increment_multiplier: 40,
-                    cookie_update_event: account::new_event_handle<CookiesUpdated>(&player),
-                    cookie_upgrade_event: account::new_event_handle<CookiesUpgraded>(&player),
-                    cookie_nft_swap_event: account::new_event_handle<CookieToNFT>(&player),
+                    cookie_update_event: account::new_event_handle<CookiesUpdated>(temp_signer),
+                    cookie_upgrade_event: account::new_event_handle<CookiesUpgraded>(temp_signer),
+                    cookie_nft_swap_event: account::new_event_handle<CookieToNFT>(temp_signer),
                 },
             );
             let old_cookies = borrow_global_mut<Cookie>(player_address);
@@ -331,8 +332,8 @@ module cookie_clicker_address::cookie_clicker {
     /// - `ENO_NOT_ENOUGH_COOKIES`: If the player does not have enough cookies to perform the upgrade.
     ///
     /// Returns: The updated `Cookie` struct representing the player's cookie data.
-    public fun upgrade_cookie(player: signer) acquires Cookie {
-        let player_address: address = signer::address_of(&player);
+    public fun upgrade_cookie(player: &signer) acquires Cookie {
+        let player_address: address = signer::address_of(player);
         assert!(exists<Cookie>(player_address), error::not_found(ENO_COOKIE_FOUND));
         let old_cookies = borrow_global_mut<Cookie>(player_address);
         assert!(old_cookies.cookies >= old_cookies.upgrade_cost, error::not_found(ENO_NOT_ENOUGH_COOKIES));
@@ -414,15 +415,15 @@ module cookie_clicker_address::cookie_clicker {
     /// - `ENOT_ENOUGH_COOKIES_FOR_SWAP`: If the player does not have enough cookies to perform the swap.
     ///
     /// Emits a `CookieToNFT` event with information about the swap.
-    public fun swop_cookie_for_nft(player: signer) acquires Cookie, ModuleData {
-        let player_address: address = signer::address_of(&player);
+    public fun swop_cookie_for_nft(player: &signer) acquires Cookie, ModuleData {
+        let player_address: address = signer::address_of(player);
         assert!(exists<Cookie>(player_address), error::not_found(ENO_COOKIE_FOUND));
         let old_cookies = borrow_global_mut<Cookie>(player_address);
         let current_threshold: u256 = ((old_cookies.initial_threshold * old_cookies.increment_multiplier) / 100) + old_cookies.initial_threshold;
         assert!(old_cookies.cookies >= current_threshold, error::not_found(ENOT_ENOUGH_COOKIES_FOR_SWAP));
         old_cookies.cookies = old_cookies.cookies - current_threshold;
         old_cookies.initial_threshold = current_threshold;
-        mint_cookie_nft(&player);
+        mint_cookie_nft(player);
         let cookies_left: u256 = old_cookies.cookies - current_threshold;
         event::emit_event(
             &mut old_cookies.cookie_nft_swap_event,
@@ -495,113 +496,112 @@ module cookie_clicker_address::cookie_clicker {
 
 
 
-    #[test(player = @0xcafe,player_again= @0xcafe,resource_account = @0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5,aptos_framework = @aptos_framework)]
-    public entry fun player_create_cookie(player: signer,player_again: signer,aptos_framework:signer,resource_account:signer) acquires Cookie,TokensClaimed,ModuleData  {
+    #[test(player = @0xcafe,resource_account = @0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5,aptos_framework = @aptos_framework)]
+    public entry fun player_create_cookie(player: &signer,aptos_framework:signer,resource_account:signer) acquires Cookie,TokensClaimed,ModuleData  {
         timestamp::set_time_has_started_for_testing(&aptos_framework);
         timestamp::update_global_time_for_test_secs(10);
-        create_account_for_test(signer::address_of(&player));
-        resource_account::create_resource_account(&player, vector::empty<u8>(), vector::empty<u8>());
-        let player_address = signer::address_of(&player);
+        create_account_for_test(signer::address_of(player));
+        resource_account::create_resource_account(player, vector::empty<u8>(), vector::empty<u8>());
+        let player_address = signer::address_of(player);
         init_module(&resource_account);
         claim_tokens(player);
-        create_cookie(player_again, 0, false);
+        create_cookie(player, 0, false);
 
         assert!(get_cookie(player_address) == 0, ENO_COOKIE_FOUND);
         assert!(coin::balance<AptosCoin>(player_address) == 100000-PLAY_COST, EBALANCE_NOT_DEDUCTED);
  
     }
 
-     #[test(player = @0x1, player_again = @0x1,resource_account = @0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5,aptos_framework = @aptos_framework)]
-    public entry fun player_create_cookie_and_update(player: signer, player_again: signer,aptos_framework:signer,resource_account:signer) acquires Cookie,TokensClaimed,ModuleData {
+     #[test(player = @0x1,resource_account = @0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5,aptos_framework = @aptos_framework)]
+    public entry fun player_create_cookie_and_update(player: &signer, aptos_framework:signer,resource_account:signer) acquires Cookie,TokensClaimed,ModuleData {
         timestamp::set_time_has_started_for_testing(&aptos_framework);
         timestamp::update_global_time_for_test_secs(10);
-        create_account_for_test(signer::address_of(&player));
-        resource_account::create_resource_account(&player, vector::empty<u8>(), vector::empty<u8>());
-        let player_address = signer::address_of(&player);
+        create_account_for_test(signer::address_of(player));
+        resource_account::create_resource_account(player, vector::empty<u8>(), vector::empty<u8>());
+        let player_address = signer::address_of(player);
         init_module(&resource_account);
         claim_tokens(player);
         create_cookie(player, 0, false);
         assert!(get_cookie(player_address) == 0, ENO_COOKIE_FOUND);
-        create_cookie(player_again, 2000, false);
+        create_cookie(player, 2000, false);
         assert!(get_cookie(player_address) == 2000, ENO_COOKIE_FOUND);
     }
 
-    #[test(player = @0x1, player_again = @0x1, player_again1 = @0x1,resource_account = @0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5,aptos_framework = @aptos_framework)]
-    public entry fun player_create_cookie_and_upgrade(player: signer, player_again: signer, player_again1: signer,aptos_framework:signer,resource_account:signer) acquires Cookie,TokensClaimed,ModuleData {
+    #[test(player = @0x1,resource_account = @0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5,aptos_framework = @aptos_framework)]
+    public entry fun player_create_cookie_and_upgrade(player: &signer,aptos_framework:signer,resource_account:signer) acquires Cookie,TokensClaimed,ModuleData {
         timestamp::set_time_has_started_for_testing(&aptos_framework);
         timestamp::update_global_time_for_test_secs(10);
-        create_account_for_test(signer::address_of(&player));
-        resource_account::create_resource_account(&player, vector::empty<u8>(), vector::empty<u8>());
-        let player_address = signer::address_of(&player);
+        create_account_for_test(signer::address_of(player));
+        resource_account::create_resource_account(player, vector::empty<u8>(), vector::empty<u8>());
+        let player_address = signer::address_of(player);
         init_module(&resource_account);
         claim_tokens(player);
         create_cookie(player, 0, false);
         assert!(get_cookie(player_address) == 0, ENO_COOKIE_FOUND);
-        upgrade_cookie(player_again);
+        upgrade_cookie(player);
         assert!(get_cookie(player_address) == 990, ENO_COOKIES_NOT_UPGRADED);
         assert!(get_player_click_multiplier(player_address) == 2, ENO_INVALID_CLICK_MULTIPLIER);
 
-        upgrade_cookie(player_again1);
+        upgrade_cookie(player);
         assert!(get_player_click_multiplier(player_address) == 4, ENO_INVALID_CLICK_MULTIPLIER);
     }
 
-    #[test(player = @0x1, player_again = @0x1, player_again1 = @0x1,resource_account = @0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5,aptos_framework = @aptos_framework)]
-    public entry fun player_create_cookie_new_game(player: signer, player_again: signer, player_again1: signer,aptos_framework:signer,resource_account:signer) acquires Cookie,TokensClaimed,ModuleData {
+    #[test(player = @0x1,resource_account = @0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5,aptos_framework = @aptos_framework)]
+    public entry fun player_create_cookie_new_game(player: &signer, aptos_framework:signer,resource_account:signer) acquires Cookie,TokensClaimed,ModuleData {
         timestamp::set_time_has_started_for_testing(&aptos_framework);
         timestamp::update_global_time_for_test_secs(10);
-        create_account_for_test(signer::address_of(&player));
-        resource_account::create_resource_account(&player, vector::empty<u8>(), vector::empty<u8>());
-        let player_address = signer::address_of(&player);
+        create_account_for_test(signer::address_of(player));
+        resource_account::create_resource_account(player, vector::empty<u8>(), vector::empty<u8>());
+        let player_address = signer::address_of(player);
         init_module(&resource_account);
         claim_tokens(player);
         create_cookie(player, 0, false);
         assert!(get_cookie(player_address) == 0, ENO_COOKIE_FOUND);
 
-        create_cookie(player_again, 2000, true);
+        create_cookie(player, 2000, true);
         assert!(get_cookie(player_address) == 2000, ENO_COOKIE_FOUND);
     }
 
-    #[test(player = @0xcafe, player_again = @0xcafe,player_again_1 = @0xcafe,resource_account = @0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5,aptos_framework = @aptos_framework)]
-    public entry fun player_create_cookie_new_game_and_swop_cookie_for_nft(player: signer, player_again: signer,player_again_1: signer,resource_account:signer,aptos_framework:signer) acquires Cookie,TokensClaimed,ModuleData {
+    #[test(player = @0xcafe, resource_account = @0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5,aptos_framework = @aptos_framework)]
+    public entry fun player_create_cookie_new_game_and_swop_cookie_for_nft(player: &signer,resource_account:signer,aptos_framework:signer) acquires Cookie,TokensClaimed,ModuleData {
         timestamp::set_time_has_started_for_testing(&aptos_framework);
         timestamp::update_global_time_for_test_secs(10);
-        create_account_for_test(signer::address_of(&player));
-        resource_account::create_resource_account(&player, vector::empty<u8>(), vector::empty<u8>());
-        let player_address = signer::address_of(&player);
+        create_account_for_test(signer::address_of(player));
+        resource_account::create_resource_account(player, vector::empty<u8>(), vector::empty<u8>());
+        let player_address = signer::address_of(player);
         init_module(&resource_account);
         claim_tokens(player);
         create_cookie(player, 0, false);
         assert!(get_cookie(player_address) == 0, ENO_COOKIE_FOUND);
-
-        create_cookie(player_again, 20000, true);
+        create_cookie(player, 20000, true);
         assert!(get_cookie(player_address) == 20000, ENO_COOKIE_FOUND);
-        swop_cookie_for_nft(player_again_1);
+        swop_cookie_for_nft(player);
         assert!(get_cookie(player_address) == 13000, ECOOKIES_NOT_SWOPED);
     }
  
     // Negative tests
-    #[test(player = @0x1)]
+    #[test(player = @0x1,resource_account = @0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5,aptos_framework = @aptos_framework)]
     #[expected_failure(abort_code = 393216, location = Self)]
-    public entry fun player_get_cookie_fail(player: signer) acquires Cookie {
+    public entry fun player_get_cookie_fail(player: &signer,aptos_framework:signer,resource_account:signer) acquires Cookie {
         timestamp::set_time_has_started_for_testing(&aptos_framework);
         timestamp::update_global_time_for_test_secs(10);
-        create_account_for_test(signer::address_of(&player));
-        resource_account::create_resource_account(&player, vector::empty<u8>(), vector::empty<u8>());
-        let player_address = signer::address_of(&player);
+        create_account_for_test(signer::address_of(player));
+        resource_account::create_resource_account(player, vector::empty<u8>(), vector::empty<u8>());
+        let player_address = signer::address_of(player);
         init_module(&resource_account);
 
         assert!(get_cookie(player_address) == 0, ENO_COOKIE_FOUND);
     }
 
 
-    #[test(player = @0x1)]
+    #[test(player = @0x1,resource_account = @0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5,aptos_framework = @aptos_framework)]
     #[expected_failure(abort_code = 393216, location = Self)]
-    public entry fun player_create_cookie_new_game_fail(player: signer) acquires Cookie {
+    public entry fun player_create_cookie_new_game_fail(player: &signer,aptos_framework:signer,resource_account:signer) acquires Cookie {
         timestamp::set_time_has_started_for_testing(&aptos_framework);
         timestamp::update_global_time_for_test_secs(10);
-        create_account_for_test(signer::address_of(&player));
-        resource_account::create_resource_account(&player, vector::empty<u8>(), vector::empty<u8>());
-        let player_address = signer::address_of(&player);
+        create_account_for_test(signer::address_of(player));
+        resource_account::create_resource_account(player, vector::empty<u8>(), vector::empty<u8>());
+        let player_address = signer::address_of(player);
         init_module(&resource_account);
         assert!(get_player_click_multiplier(player_address) == 4, ENO_INVALID_CLICK_MULTIPLIER);
     }
