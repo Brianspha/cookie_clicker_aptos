@@ -4,13 +4,7 @@ This repo contains artifacts for my interpretation of what the web3 version of t
 
 ### Note
 
-Unit tests are still failing for some reason due to the below error:
-
-`assert!(
-│ 446 │ │             coin_address<CoinType>() == account_addr,
-│ 447 │ │             error::invalid_argument(ECOIN_INFO_ADDRESS_MISMATCH),
-│ 448 │ │         );`
-Ive searched the interwebs with no luck even previous examples in the aptos repo arent working due to this error :(
+UI WIP
 
 ### Installation
 
